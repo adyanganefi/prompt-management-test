@@ -38,6 +38,12 @@ Sistem manajemen prompt AI dengan fitur versioning, agen creation, dan API integ
 - Toggle aktif/nonaktif
 - Tracking penggunaan terakhir
 
+### 🎯 Model Profile Management
+- Simpan konfigurasi model (API key, base URL)
+- Enkripsi API key untuk keamanan
+- Gunakan ulang profile di berbagai agent
+- Support multiple AI providers
+
 ### 💬 Chat Interface
 - Chat langsung dengan agent
 - Pilih agent dan versi spesifik
@@ -213,6 +219,9 @@ Aplikasi menggunakan [Pydantic Settings](https://docs.pydantic.dev/latest/concep
 - Menggunakan nilai default jika `.env` tidak ada
 - Override nilai default jika `.env` ada dan berisi variabel yang sama
 
+### Tentang Secret Key
+**Secret Key digunakan untuk JWT authentication** - mengamankan token login dan API access. Isinya bebas (minimal 32 karakter untuk keamanan), tapi harus kuat dan dirahasiakan. Di production, **wajib diubah** dari nilai default.
+
 ### Contoh File .env (Opsional)
 Jika ingin membuat `.env` di folder `backend/`, isi dengan:
 ```env
@@ -235,7 +244,7 @@ CORS_ORIGINS=http://localhost:5173,http://localhost:3000
 ### Nilai Default (Tanpa .env)
 Jika tidak ada `.env`, aplikasi menggunakan:
 - **Database**: `postgresql+asyncpg://postgres:postgres@localhost:5433/prompt_management`
-- **Secret Key**: `your-super-secret-key-change-in-production`
+- **Secret Key**: `your-super-secret-key-change-in-production` (digunakan untuk JWT authentication)
 - **Port Backend**: `8001`
 - **Port Frontend**: `5173`
 - **CORS**: `http://localhost:5173,http://localhost:3000`
@@ -273,9 +282,7 @@ Jika tidak ada `.env`, aplikasi menggunakan:
 2. Klik "Versi Baru"
 3. Isi konfigurasi:
    - **System Prompt**: Instruksi untuk AI
-   - **Model**: Pilih model (GPT-4, GPT-3.5, dll)
-   - **API Key**: API key dari OpenAI atau provider lain
-   - **Base URL**: Kosongkan untuk OpenAI default
+   - **Model Profile**: Model Profile yang telah dibuat
    - **Parameter lanjutan**: Temperature, Max Tokens, dll
 4. Klik "Buat Versi"
 
@@ -292,7 +299,18 @@ Jika tidak ada `.env`, aplikasi menggunakan:
 4. API key akan ditampilkan - **simpan baik-baik!**
 5. Gunakan API key sebagai Bearer token untuk API calls
 
-### 7. Chat dengan Agent
+### 7. Membuat Model Profile
+
+1. Buka tab "Model Profile"
+2. Klik "Buat Model Profile"
+3. Isi konfigurasi:
+   - **Nama Profile**: Nama untuk identifikasi
+   - **Base URL**: URL API provider
+   - **API Key**: API key dari provider (akan dienkripsi)
+4. Klik "Buat Profile"
+5. Profile dapat digunakan ulang di berbagai agent
+
+### 8. Chat dengan Agent
 
 1. Buka tab "Chat"
 2. Pilih agent dan versi
