@@ -1,6 +1,6 @@
 # 🤖 Prompt Management System
 
-Sistem manajemen prompt AI yang lengkap dengan fitur versioning, multi-agent, dan API integration. Dibangun dengan React + Tailwind CSS untuk frontend dan Python FastAPI + LangChain untuk backend.
+Sistem manajemen prompt AI dengan fitur versioning, agen creation, dan API integration. Dibangun dengan React + Tailwind CSS untuk frontend dan Python FastAPI + LangChain untuk backend.
 
 ## 📋 Daftar Isi
 
@@ -9,9 +9,11 @@ Sistem manajemen prompt AI yang lengkap dengan fitur versioning, multi-agent, da
 3. [Prasyarat](#-prasyarat)
 4. [Instalasi & Setup](#-instalasi--setup)
 5. [Menjalankan Aplikasi](#-menjalankan-aplikasi)
-6. [Penggunaan](#-penggunaan)
-7. [API Documentation](#-api-documentation)
-8. [Struktur Folder](#-struktur-folder)
+6. [Konfigurasi Environment (.env)](#-konfigurasi-environment-env)
+7. [Kustomisasi Port, Database, dan API Path](#-kustomisasi-port-database-dan-api-path)
+8. [Penggunaan](#-penggunaan)
+9. [API Documentation](#-api-documentation)
+10. [Struktur Folder](#-struktur-folder)
 
 ---
 
@@ -22,8 +24,8 @@ Sistem manajemen prompt AI yang lengkap dengan fitur versioning, multi-agent, da
 - Isolasi data antar project/tim - project A tidak bisa melihat project B
 - Autentikasi JWT untuk keamanan
 
-### 🤖 Multi-Agent dengan Versioning
-- Buat multiple agents dalam satu project
+### 🤖 Agent dengan Versioning
+- Buat agents dalam satu project
 - Setiap agent memiliki versioning (v1, v2, v3, dst.)
 - Versi bersifat **immutable** - tidak bisa diubah setelah dibuat
 - Preview perubahan sebelum membuat versi baru
@@ -37,16 +39,10 @@ Sistem manajemen prompt AI yang lengkap dengan fitur versioning, multi-agent, da
 - Tracking penggunaan terakhir
 
 ### 💬 Chat Interface
-- Chat langsung dengan agent dari dashboard
+- Chat langsung dengan agent
 - Pilih agent dan versi spesifik
 - Session management
 - History percakapan
-
-### 🎨 UI Modern & Responsive
-- Desain elegan dengan Tailwind CSS
-- Fully responsive (mobile, tablet, desktop)
-- Dark/light theme ready
-- Animasi smooth
 
 ---
 
@@ -199,6 +195,50 @@ Frontend akan berjalan di: `http://localhost:5173`
   - Base URL client di [frontend/src/api/index.js](frontend/src/api/index.js#L3-L15) (`API_BASE_URL`, default `'/api'` atau `VITE_API_BASE_URL`).
 
 Setelah mengubah nilai di atas, restart backend dan frontend agar konfigurasi baru diterapkan.
+
+---
+
+## 🔧 Konfigurasi Environment (.env)
+
+### Status File .env
+**File `.env` bersifat OPSIONAL** - project dapat berjalan tanpa file ini karena semua pengaturan sudah memiliki nilai default yang sesuai untuk development lokal.
+
+### Kapan Perlu .env?
+- **Production**: Wajib untuk mengubah `SECRET_KEY`, database credentials, dll.
+- **Custom konfigurasi**: Jika ingin mengubah port, database URL, CORS origins, dll.
+- **Keamanan**: Jangan commit `.env` ke Git (sudah di-ignore di `.gitignore`)
+
+### Cara Kerja
+Aplikasi menggunakan [Pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) yang akan:
+- Menggunakan nilai default jika `.env` tidak ada
+- Override nilai default jika `.env` ada dan berisi variabel yang sama
+
+### Contoh File .env (Opsional)
+Jika ingin membuat `.env` di folder `backend/`, isi dengan:
+```env
+# Database
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/prompt_management
+
+# JWT Authentication
+SECRET_KEY=your-actual-secret-key-here-change-in-production
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+# Server Configuration
+HOST=0.0.0.0
+PORT=8001
+DEBUG=true
+
+# CORS Settings
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+```
+
+### Nilai Default (Tanpa .env)
+Jika tidak ada `.env`, aplikasi menggunakan:
+- **Database**: `postgresql+asyncpg://postgres:postgres@localhost:5433/prompt_management`
+- **Secret Key**: `your-super-secret-key-change-in-production`
+- **Port Backend**: `8001`
+- **Port Frontend**: `5173`
+- **CORS**: `http://localhost:5173,http://localhost:3000`
 
 ---
 
@@ -376,13 +416,3 @@ prompt-management-test/
 - Pastikan API key OpenAI/provider valid
 - Cek model name sesuai dengan provider
 - Pastikan versi agent sudah diaktifkan
-
----
-
-## 📞 Support
-
-Jika mengalami masalah atau ada pertanyaan, silakan buat issue di repository ini.
-
----
-
-**Happy Prompting! 🚀**
