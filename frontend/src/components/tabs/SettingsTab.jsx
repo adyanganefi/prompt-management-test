@@ -55,7 +55,7 @@ const SettingsTab = () => {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-6 mx-auto">
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-dark-900">Settings</h2>

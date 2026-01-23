@@ -1,6 +1,6 @@
 const ApiGuideTab = () => {
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto">
       <div className="space-y-2">
         <h2 className="text-2xl font-bold text-dark-900">API Chat Guide</h2>
         <p className="text-dark-600">Panduan mengirim pertanyaan ke agent melalui API backend.</p>

@@ -19,7 +19,7 @@ const DashboardPage = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState('agents');
+  const [activeTab, setActiveTab] = useState('model-profiles');
 
   useEffect(() => {
     refreshUser();
@@ -30,7 +30,7 @@ const DashboardPage = () => {
     if (['agents', 'api-keys', 'api-guide', 'chat', 'chat-history', 'settings', 'model-profiles'].includes(path)) {
       setActiveTab(path);
     } else {
-      setActiveTab('agents');
+      setActiveTab('model-profiles');
     }
   }, [location]);
 
@@ -46,9 +46,9 @@ const DashboardPage = () => {
   };
 
   const menuItems = [
-    { id: 'agents', label: 'Agents', icon: Layers },
     { id: 'model-profiles', label: 'Model Profile', icon: Bot },
     { id: 'api-keys', label: 'API Keys', icon: Key },
+    { id: 'agents', label: 'Agents', icon: Layers },
     { id: 'api-guide', label: 'API Guide', icon: BookOpen },
     { id: 'chat', label: 'Chat Playground', icon: MessageSquare },
     { id: 'chat-history', label: 'Chat History', icon: Clock },
@@ -74,65 +74,65 @@ const DashboardPage = () => {
         flex flex-col h-screen lg:h-screen max-h-screen overflow-hidden
       `}>
         {/* Sidebar Header */}
-        <div className="p-5 border-b border-dark-100">
-          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} gap-2`}>
-            {!sidebarCollapsed ? (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
-                  <Bot className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="font-bold text-dark-900">Prompt Manager</h1>
-                  <p className="text-xs text-dark-500">v1.0.0</p>
-                </div>
+        <div className="px-5 py-5 border-b border-dark-100 flex items-center justify-between min-h-[80px]">
+          {!sidebarCollapsed ? (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
+                <Bot className="w-6 h-6 text-white" />
               </div>
-            ) : null}
-
-            <div className={`flex items-center gap-2 ${sidebarCollapsed ? 'w-full justify-center' : ''}`}>
-              <button
-                className="hidden lg:inline-flex p-2 hover:bg-dark-100 rounded-lg"
-                onClick={() => setSidebarCollapsed((prev) => !prev)}
-                aria-label={sidebarCollapsed ? 'Perluas sidebar' : 'Sempitkan sidebar'}
-              >
-                {sidebarCollapsed ? (
-                  <ChevronsRight className="w-5 h-5" />
-                ) : (
-                  <ChevronsLeft className="w-5 h-5" />
-                )}
-              </button>
-              <button 
-                className="lg:hidden p-2 hover:bg-dark-100 rounded-lg"
-                onClick={() => setSidebarOpen(false)}
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div>
+                <h1 className="font-bold text-dark-900">Prompt Manager</h1>
+                <p className="text-xs text-dark-500">v1.0.0</p>
+              </div>
             </div>
+          ) : (
+            <div></div> // Spacer for collapsed state
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              className="hidden lg:inline-flex p-2 hover:bg-dark-100 rounded-lg"
+              onClick={() => setSidebarCollapsed((prev) => !prev)}
+              aria-label={sidebarCollapsed ? 'Perluas sidebar' : 'Sempitkan sidebar'}
+            >
+              {sidebarCollapsed ? (
+                <ChevronsRight className="w-5 h-5" />
+              ) : (
+                <ChevronsLeft className="w-5 h-5" />
+              )}
+            </button>
+            <button 
+              className="lg:hidden p-2 hover:bg-dark-100 rounded-lg"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
         {/* Project Info */}
-        <div className={`mx-4 mt-4 rounded-xl bg-gradient-to-r from-primary-50 to-primary-100 ${sidebarCollapsed ? 'p-3' : 'p-4'}`}>
-          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
-            <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
+        <div className={`mx-4 mt-4 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 ${sidebarCollapsed ? 'p-3' : 'p-4'} shadow-sm border border-blue-200`}>
+          <div className={`flex ${sidebarCollapsed ? 'justify-center' : 'items-center gap-3'}`}>
+            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
               {user?.name?.charAt(0)?.toUpperCase() || 'P'}
             </div>
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-dark-900 truncate">{user?.name}</p>
-                <p className="text-xs text-dark-500 truncate">@{user?.username}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-dark-900 text-sm">{user?.name}</p>
+                    <p className="text-xs text-dark-500">@{user?.username}</p>
+                  </div>
+                  <div className="text-right text-xs text-dark-600">
+                    <div className="flex flex-col gap-1">
+                      <span><strong className="text-primary-600 font-medium">{user?.agents_count || 0}</strong> Agents</span>
+                      <span><strong className="text-primary-600 font-medium">{user?.api_keys_count || 0}</strong> API Keys</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
-          {!sidebarCollapsed && (
-            <div className="mt-3 flex items-center gap-4 text-xs">
-              <span className="text-dark-600">
-                <strong className="text-primary-600">{user?.agents_count || 0}</strong> Agents
-              </span>
-              <span className="text-dark-600">
-                <strong className="text-primary-600">{user?.api_keys_count || 0}</strong> API Keys
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Navigation */}
@@ -152,7 +152,7 @@ const DashboardPage = () => {
               <item.icon className="w-5 h-5" />
               {!sidebarCollapsed && (
                 <>
-                  <span className="font-medium">{item.label}</span>
+                  <span className="font-medium text-sm">{item.label}</span>
                   <ChevronRight className={`w-4 h-4 ml-auto transition-transform ${activeTab === item.id ? 'rotate-90' : ''}`} />
                 </>
               )}
@@ -167,7 +167,7 @@ const DashboardPage = () => {
             className={`w-full flex items-center gap-3 ${sidebarCollapsed ? 'px-3 py-3 justify-center' : 'px-4 py-3'} rounded-xl text-red-600 hover:bg-red-50 transition-all`}
           >
             <LogOut className="w-5 h-5" />
-            {!sidebarCollapsed && <span className="font-medium">Keluar</span>}
+            {!sidebarCollapsed && <span className="font-medium text-sm">Keluar</span>}
           </button>
         </div>
       </aside>
@@ -175,7 +175,7 @@ const DashboardPage = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen min-w-0">
         {/* Top Bar */}
-        <header className="bg-white border-b border-dark-100 px-6 lg:px-8 py-5 flex items-center justify-between lg:justify-end gap-3">
+        <header className="bg-white border-b border-dark-100 px-6 lg:px-8 py-5 flex items-center justify-between lg:justify-end gap-3 sticky top-0 z-40 min-h-[80px]">
           <button 
             className="lg:hidden p-2 hover:bg-dark-100 rounded-lg"
             onClick={() => setSidebarOpen(true)}
