@@ -37,6 +37,20 @@ CREATE TABLE IF NOT EXISTS project_api_keys (
 );
 
 -- ===========================================
+-- MODEL PROFILES TABLE
+-- ===========================================
+CREATE TABLE IF NOT EXISTS model_profiles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name VARCHAR(150) NOT NULL,
+    base_url VARCHAR(500),
+    api_key_encrypted TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(project_id, name)
+);
+
+-- ===========================================
 -- AGENTS TABLE
 -- ===========================================
 CREATE TABLE IF NOT EXISTS agents (
@@ -71,20 +85,6 @@ CREATE TABLE IF NOT EXISTS agent_versions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     notes TEXT,
     UNIQUE(agent_id, version_number)
-);
-
--- ===========================================
--- MODEL PROFILES TABLE
--- ===========================================
-CREATE TABLE IF NOT EXISTS model_profiles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    name VARCHAR(150) NOT NULL,
-    base_url VARCHAR(500),
-    api_key_encrypted TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(project_id, name)
 );
 
 -- ===========================================

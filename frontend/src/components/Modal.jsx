@@ -1,19 +1,33 @@
 import { X } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
     } else {
       document.body.style.overflow = 'unset';
+      document.body.style.position = 'unset';
+      document.body.style.width = 'unset';
     }
     return () => {
       document.body.style.overflow = 'unset';
+      document.body.style.position = 'unset';
+      document.body.style.width = 'unset';
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const sizeClasses = {
     sm: 'max-w-md',
@@ -23,16 +37,17 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
     full: 'max-w-6xl'
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div 
-        className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm"
+  const modalContent = (
+    <div className="fixed top-0 left-0 w-screen h-screen z-[60] flex items-center justify-center p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+      <div
+        className="absolute top-0 left-0 w-full h-full bg-dark-900/60 backdrop-blur-sm"
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
         onClick={onClose}
       />
-      <div className={`relative w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-2xl animate-slide-up max-h-[90vh] flex flex-col`}>
+      <div className={`relative w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-2xl animate-slide-up max-h-[90vh] flex flex-col z-[70]`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-dark-100">
           <h2 className="text-xl font-semibold text-dark-900">{title}</h2>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-dark-100 transition-colors"
           >
@@ -45,6 +60,8 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default Modal;

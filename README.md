@@ -92,12 +92,7 @@ Pastikan Anda sudah menginstal:
 
 1. Buka terminal PostgreSQL atau gunakan pgAdmin
 
-2. Buat database baru:
-```sql
-CREATE DATABASE prompt_management;
-```
-
-3. Hubungkan ke database dan jalankan script inisialisasi:
+2. Buat database baru dan jalankan script inisialisasi:
 
 **Menggunakan psql:**
 ```bash
@@ -118,6 +113,8 @@ CREATE DATABASE prompt_management;
 1. Klik kanan pada "Databases" → "Create" → "Database"
 2. Isi nama: `prompt_management`
 3. Klik "Save"
+4. Klik kanan pada database `prompt_management` → "Query Tool"
+5. Buka file `database/init.sql` dan jalankan
 4. Klik kanan pada database `prompt_management` → "Query Tool"
 5. Buka file `database/init.sql`, copy semua isinya
 6. Paste di Query Tool dan klik "Execute" (F5)
