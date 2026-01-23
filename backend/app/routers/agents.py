@@ -12,6 +12,7 @@ from app.schemas import (
 )
 from app.utils.auth import get_current_project
 from app.utils.encryption import encrypt_api_key
+from app.utils.prompt_variables import extract_variables
 
 router = APIRouter(prefix="/agents", tags=["Agents"])
 
@@ -22,6 +23,7 @@ def _version_to_response(version: AgentVersion) -> AgentVersionResponse:
         profile_name = version.model_profile.name
     resp = AgentVersionResponse.from_orm(version)
     resp.model_profile_name = profile_name
+    resp.variables = extract_variables(version.system_prompt)
     return resp
 
 @router.post("", response_model=AgentResponse, status_code=status.HTTP_201_CREATED)

@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { agentsApi, chatApi, apiKeysApi } from '../../api';
-import { Send, Bot, User, Loader2, RefreshCw, MessageSquare } from 'lucide-react';
+import { Send, Bot, User, Loader2, RefreshCw, MessageSquare, SlidersHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import LoadingSpinner from '../LoadingSpinner';
+import Modal from '../Modal';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 
 const focusInput = (ref) => {
   if (ref?.current) {
@@ -27,6 +31,11 @@ const formatWIBTime = (value) => {
   return format(wibDate, 'HH:mm:ss', { locale: localeId });
 };
 
+const extractVariables = (prompt = '') => {
+  const matches = prompt.match(/\$[A-Za-z_][A-Za-z0-9_]*/g) || [];
+  return Array.from(new Set(matches.map((m) => m.slice(1))));
+};
+
 const ChatTab = () => {
   const [agents, setAgents] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState(null);
@@ -41,6 +50,9 @@ const ChatTab = () => {
   const [apiKeysLoading, setApiKeysLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  const [promptVariables, setPromptVariables] = useState([]);
+  const [variableValues, setVariableValues] = useState({});
+  const [showVariablesModal, setShowVariablesModal] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -62,6 +74,19 @@ const ChatTab = () => {
       focusInput(inputRef);
     }
   }, [sending]);
+
+  useEffect(() => {
+    const vars = extractVariables(selectedVersion?.system_prompt || '');
+    setPromptVariables(vars);
+    setVariableValues((prev) => {
+      const next = {};
+      vars.forEach((name) => {
+        if (prev[name]) next[name] = prev[name];
+        else next[name] = '';
+      });
+      return next;
+    });
+  }, [selectedVersion]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -146,6 +171,10 @@ const ChatTab = () => {
     focusInput(inputRef);
   };
 
+  const handleVariableChange = (name, value) => {
+    setVariableValues((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!selectedApiKey) {
@@ -165,44 +194,105 @@ const ChatTab = () => {
     setSending(true);
     focusInput(inputRef);
 
+    const userMessageId = Date.now();
+    const assistantMessageId = userMessageId + 1;
+
     // Add user message immediately
     setMessages(prev => [...prev, {
-      id: Date.now(),
+      id: userMessageId,
       role: 'user',
       content: userMessage,
       created_at: new Date().toISOString()
+    }, {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      created_at: null,
+      streaming: true
     }]);
 
     try {
-      const response = await chatApi.send({
+      await chatApi.stream({
         message: userMessage,
         agent_name: selectedAgent.name,
         version_number: selectedVersion?.version_number,
-        session_id: sessionId
-      }, selectedApiKeyValue);
-
-      // Update session ID if new
-      if (!sessionId) {
-        setSessionId(response.data.session_id);
-      }
-
-      // Add assistant message with token breakdown
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: response.data.response,
-        tokens_used: response.data.total_tokens ?? response.data.tokens_used,
-        prompt_tokens: response.data.prompt_tokens,
-        completion_tokens: response.data.completion_tokens,
-        model_name: response.data.model_name,
-        created_at: new Date().toISOString()
-      }]);
+        session_id: sessionId,
+        variables: promptVariables.length ? variableValues : undefined
+      }, selectedApiKeyValue, {
+        onStart: (payload) => {
+          if (!sessionId && payload?.session_id) {
+            setSessionId(payload.session_id);
+          }
+        },
+        onToken: (payload) => {
+          const token = payload?.token || '';
+          if (!token) return;
+          setMessages((prev) => prev.map((msg) => (
+            msg.id === assistantMessageId
+              ? {
+                ...msg,
+                content: `${msg.content}${token}`,
+                created_at: msg.created_at || new Date().toISOString()
+              }
+              : msg
+          )));
+        },
+        onDone: (payload) => {
+          setMessages((prev) => prev.map((msg) => (
+            msg.id === assistantMessageId
+              ? {
+                ...msg,
+                streaming: false,
+                tokens_used: payload?.tokens_used ?? payload?.total_tokens,
+                prompt_tokens: payload?.prompt_tokens,
+                completion_tokens: payload?.completion_tokens,
+                model_name: payload?.model_name,
+                created_at: msg.created_at || new Date().toISOString()
+              }
+              : msg
+          )));
+        },
+        onError: (payload) => {
+          const detail = payload?.detail || 'Gagal mengirim pesan (streaming).';
+          toast.error(detail);
+          setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
+          setInput(userMessage);
+        }
+      });
       focusInput(inputRef);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Gagal mengirim pesan');
-      // Remove failed user message
-      setMessages(prev => prev.slice(0, -1));
-      setInput(userMessage);
+      try {
+        const response = await chatApi.send({
+          message: userMessage,
+          agent_name: selectedAgent.name,
+          version_number: selectedVersion?.version_number,
+          session_id: sessionId,
+          variables: promptVariables.length ? variableValues : undefined
+        }, selectedApiKeyValue);
+
+        if (!sessionId) {
+          setSessionId(response.data.session_id);
+        }
+
+        setMessages(prev => prev.map((msg) => (
+          msg.id === assistantMessageId
+            ? {
+              ...msg,
+              content: response.data.response,
+              streaming: false,
+              tokens_used: response.data.tokens_used ?? response.data.total_tokens,
+              prompt_tokens: response.data.prompt_tokens,
+              completion_tokens: response.data.completion_tokens,
+              model_name: response.data.model_name
+            }
+            : msg
+        )));
+        focusInput(inputRef);
+      } catch (fallbackError) {
+        toast.error(fallbackError.response?.data?.detail || 'Gagal mengirim pesan');
+        setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
+        setInput(userMessage);
+      }
       focusInput(inputRef);
     } finally {
       setSending(false);
@@ -235,10 +325,12 @@ const ChatTab = () => {
     );
   }
 
+  const hasStreaming = messages.some((message) => message.streaming);
+
   return (
-    <div className="flex flex-col h-[calc(100vh-160px)] min-h-[560px] max-w-6xl w-full mx-auto gap-4 px-1 sm:px-0">
+    <div className="flex flex-col gap-4 max-w-6xl w-full mx-auto px-1 sm:px-0 flex-1 min-h-0 overflow-hidden">
       {/* Chat Header */}
-      <div className="card p-4">
+      <div className="card p-4 flex-shrink-0">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr_auto] gap-3 lg:gap-4 items-end">
           <div className="flex-1 min-w-0">
             <label className="label">Pilih API Key Aktif</label>
@@ -274,6 +366,7 @@ const ChatTab = () => {
               ))}
             </select>
           </div>
+
           <div className="flex-1 min-w-0">
             <label className="label">Pilih Versi</label>
             <select
@@ -291,7 +384,19 @@ const ChatTab = () => {
               ))}
             </select>
           </div>
+
           <div className="flex items-center gap-2 flex-wrap justify-start lg:justify-end">
+            {promptVariables.length > 0 && (
+              <button
+                onClick={() => setShowVariablesModal(true)}
+                className="btn btn-ghost inline-flex items-center gap-2"
+                title="Isi variabel prompt (opsional)"
+              >
+                <SlidersHorizontal className="w-5 h-5" />
+                <span className="text-sm font-medium">Isi Variabel</span>
+                <span className="badge badge-gray text-[11px]">{promptVariables.length}</span>
+              </button>
+            )}
             <button
               onClick={() => {
                 const ok = confirm('Mulai sesi baru? Riwayat chat pada layar akan direset.');
@@ -310,8 +415,8 @@ const ChatTab = () => {
       </div>
 
       {/* Chat Messages */}
-      <div className="card flex-1 flex flex-col overflow-hidden min-h-[420px]">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="card flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center text-dark-400">
@@ -346,7 +451,17 @@ const ChatTab = () => {
                         ? 'chat-message-user' 
                         : 'chat-message-assistant'
                     }`}>
-                      <p className="whitespace-pre-wrap">{message.content}</p>
+                      <div className="chat-markdown">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                      {message.streaming && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-dark-400">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Mengetik...</span>
+                        </div>
+                      )}
                     </div>
                     <div className={`flex items-center gap-2 mt-1 text-xs text-dark-400 ${
                       message.role === 'user' ? 'justify-end' : ''
@@ -366,7 +481,7 @@ const ChatTab = () => {
               </div>
             ))
           )}
-          {sending && (
+          {sending && !hasStreaming && (
             <div className="flex justify-start">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-dark-200 flex items-center justify-center">
@@ -407,6 +522,49 @@ const ChatTab = () => {
           </form>
         </div>
       </div>
+
+      <Modal
+        isOpen={showVariablesModal}
+        onClose={() => setShowVariablesModal(false)}
+        title="Variabel Prompt (opsional)"
+      >
+        {promptVariables.length === 0 ? (
+          <p className="text-sm text-dark-500">Tidak ada variabel pada prompt aktif.</p>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-dark-600">Isi jika ingin mengganti placeholder di system prompt. Jika dibiarkan kosong, placeholder tetap apa adanya.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {promptVariables.map((name) => (
+                <div key={name}>
+                  <label className="label text-xs">
+                    {`$${name}`} <span className="text-dark-400">(opsional)</span>
+                  </label>
+                  <input
+                    className="input"
+                    value={variableValues[name] || ''}
+                    onChange={(e) => handleVariableChange(name, e.target.value)}
+                    placeholder={`Masukkan nilai untuk ${name}`}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button className="btn btn-secondary" onClick={() => {
+                setVariableValues((prev) => {
+                  const next = { ...prev };
+                  promptVariables.forEach((name) => { next[name] = ''; });
+                  return next;
+                });
+              }}>
+                Kosongkan
+              </button>
+              <button className="btn btn-primary" onClick={() => setShowVariablesModal(false)}>
+                Selesai
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

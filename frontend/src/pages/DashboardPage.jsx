@@ -205,7 +205,7 @@ const DashboardPage = () => {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 p-6 overflow-auto min-w-0">
+        <div className={`flex-1 p-6 min-w-0 min-h-0 flex flex-col ${activeTab === 'chat' ? 'overflow-hidden' : 'overflow-auto'}`}>
           {activeTab === 'agents' && <AgentsTab />}
           {activeTab === 'model-profiles' && <ModelProfilesTab />}
           {activeTab === 'api-keys' && <ApiKeysTab />}

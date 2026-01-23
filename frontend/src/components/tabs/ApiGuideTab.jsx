@@ -33,13 +33,18 @@ const ApiGuideTab = () => {
   "message": "Halo, apa kabar?",
   "agent_name": "<nama_agent>",
   "version_number": 1,
-  "session_id": "<optional_session_uuid>"
+  "session_id": "<optional_session_uuid>",
+  "variables": {
+    "name": "Budi",
+    "age": "21"
+  }
 }`}
           </pre>
           <ul className="list-disc list-inside ml-4 space-y-1">
             <li><span className="font-mono">agent_name</span> wajib: pencarian case-insensitive di project.</li>
             <li><span className="font-mono">version_number</span> opsional: kosongkan untuk memakai versi aktif agent.</li>
             <li><span className="font-mono">session_id</span> opsional: kosong/null untuk memulai sesi baru; kirim ulang nilai sebelumnya agar konteks dipakai (riwayat lintas versi). Jika kirim nilai yang tidak ada, request akan ditolak.</li>
+            <li><span className="font-mono">variables</span> opsional: map nilai untuk placeholder di system prompt (misal prompt berisi <span className="font-mono">$name</span>, <span className="font-mono">$age</span>). Jika ada yang tidak diisi, placeholder dibiarkan apa adanya.</li>
           </ul>
         </div>
         <div className="space-y-1 text-sm text-dark-700">
@@ -50,13 +55,46 @@ const ApiGuideTab = () => {
   "session_id": "<uuid>",
   "agent_name": "<nama_agent>",
   "version_number": 2,
+  "tokens_used": 145,
   "prompt_tokens": 80,
   "completion_tokens": 65,
   "total_tokens": 145,
+  "total_prompt_tokens": 80,
+  "total_completion_tokens": 65,
   "model_name": "gpt-4o"
 }`}
           </pre>
-          <p className="text-dark-600 text-xs">Gunakan <span className="font-mono">session_id</span> dari respons berikutnya untuk mempertahankan konteks.</p>
+          <p className="text-dark-600 text-xs">Gunakan <span className="font-mono">session_id</span> dari respons berikutnya untuk mempertahankan konteks. <span className="font-mono">tokens_used</span> adalah total token untuk jawaban ini saja, sedangkan <span className="font-mono">total_tokens</span> adalah total kumulatif dari seluruh session.</p>
+        </div>
+      </section>
+
+      <section className="card p-4 space-y-3">
+        <h3 className="text-lg font-semibold text-dark-900">Streaming (SSE)</h3>
+        <div className="space-y-1 text-sm text-dark-700">
+          <p><span className="font-mono">POST /api/chat/stream</span> (SSE)</p>
+          <p>Headers:</p>
+          <ul className="list-disc list-inside ml-4 space-y-1">
+            <li><span className="font-mono">Authorization: Bearer &lt;project_api_key&gt;</span></li>
+            <li><span className="font-mono">Content-Type: application/json</span></li>
+          </ul>
+        </div>
+        <div className="space-y-2 text-sm text-dark-700">
+          <p>Body JSON sama dengan endpoint normal.</p>
+          <p>Server mengirim event SSE bertahap:</p>
+          <pre className="bg-dark-900 text-dark-50 p-3 rounded-lg text-xs overflow-auto">
+{`event: start
+data: {"session_id":"<uuid>","agent_name":"<nama_agent>","version_number":2,"model_name":"gpt-4o"}
+
+event: token
+data: {"token":"Halo"}
+
+event: token
+data: {"token":" dunia"}
+
+event: done
+data: {"session_id":"<uuid>","agent_name":"<nama_agent>","version_number":2,"model_name":"gpt-4o","tokens_used":145,"prompt_tokens":80,"completion_tokens":65,"total_tokens":320,"total_prompt_tokens":180,"total_completion_tokens":140}`}
+          </pre>
+          <p className="text-xs text-dark-500">Gunakan event <span className="font-mono">token</span> untuk menampilkan jawaban bertahap. Nilai token usage akan terisi jika provider mendukung <span className="font-mono">stream_usage</span> pada streaming. <span className="font-mono">tokens_used</span> adalah total token untuk jawaban ini saja, sedangkan <span className="font-mono">total_tokens</span> adalah total kumulatif dari seluruh session (semua pesan assistant di session_id yang sama). <span className="font-mono">total_prompt_tokens</span> dan <span className="font-mono">total_completion_tokens</span> adalah akumulasi prompt dan completion tokens dari seluruh session.</p>
         </div>
       </section>
 
@@ -70,7 +108,8 @@ const ApiGuideTab = () => {
     "message": "Halo",
     "agent_name": "<nama_agent>",
     "version_number": 1,
-    "session_id": null
+    "session_id": null,
+    "variables": {"name": "Budi"}
   }'`}
         </pre>
       </section>

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 from uuid import UUID
 
@@ -109,6 +109,7 @@ class AgentVersionResponse(BaseModel):
     agent_id: UUID
     version_number: int
     system_prompt: str
+    variables: List[str] = []
     model_name: str
     model_profile_id: Optional[UUID]
     model_profile_name: Optional[str] = None
@@ -170,6 +171,7 @@ class ChatRequest(BaseModel):
     version_number: Optional[int] = None  # If None, use active version
     # Accept empty string as null to avoid UUID parsing errors from clients sending ""
     session_id: Optional[str] = None
+    variables: Optional[Dict[str, str]] = None
 
     @model_validator(mode="before")
     def normalize_session_id(cls, values):
@@ -184,9 +186,12 @@ class ChatResponse(BaseModel):
     agent_name: str
     version_number: int
     model_name: Optional[str] = None
+    tokens_used: Optional[int] = None
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
     total_tokens: Optional[int] = None
+    total_prompt_tokens: Optional[int] = None
+    total_completion_tokens: Optional[int] = None
 
 class ChatHistoryResponse(BaseModel):
     id: UUID

@@ -337,7 +337,11 @@ curl -X POST "http://localhost:8001/api/chat" \
     "message": "Halo, apa kabar?",
     "agent_name": "Nama Agent",            
     "version_number": 1,                   
-    "session_id": "uuid-session-opsional" 
+    "session_id": "uuid-session-opsional",
+    "variables": {
+      "name": "Budi",
+      "age": "21"
+    }
   }'
 ```
 
@@ -345,6 +349,7 @@ Keterangan payload:
 - `agent_name`: nama agent (case-insensitive). Wajib diisi.
 - `version_number`: nomor versi agent. Opsional; bila kosong akan memakai versi aktif.
 - `session_id`: gunakan untuk melanjutkan sesi yang sudah ada. Opsional; jika dikosongkan server membuat sesi baru dan mengembalikan `session_id` baru.
+- `variables`: map nilai untuk placeholder `$` di system prompt (misal `$name`, `$age`). Opsional; jika ada yang kosong, placeholder akan dibiarkan apa adanya.
 
 ### Response:
 ```json
@@ -353,12 +358,55 @@ Keterangan payload:
   "session_id": "uuid-session",
   "agent_name": "Nama Agent",
   "version_number": 1,
+  "tokens_used": 145,
   "prompt_tokens": 80,
   "completion_tokens": 65,
   "total_tokens": 145,
+  "total_prompt_tokens": 80,
+  "total_completion_tokens": 65,
   "model_name": "gpt-4o"
 }
 ```
+
+**Penjelasan Token Usage:**
+- `tokens_used`: Total token yang digunakan untuk **jawaban assistant ini saja** (prompt_tokens + completion_tokens)
+- `total_tokens`: Total kumulatif token dari **seluruh session** (semua pesan assistant di session_id yang sama). Jika ini pesan pertama, nilainya sama dengan `tokens_used`. Jika ada pesan sebelumnya, nilainya adalah akumulasi dari semua pesan di session tersebut.
+- `total_prompt_tokens`: Total kumulatif prompt tokens dari seluruh session
+- `total_completion_tokens`: Total kumulatif completion tokens dari seluruh session
+
+### Streaming (SSE)
+
+Selain endpoint HTTP biasa, tersedia streaming response via SSE:
+
+```bash
+curl -N -X POST "http://localhost:8001/api/chat/stream" \
+  -H "Authorization: Bearer pm_project_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Halo, apa kabar?",
+    "agent_name": "Nama Agent",
+    "version_number": 1,
+    "session_id": null
+  }'
+```
+
+Event SSE yang diterima:
+
+```
+event: start
+data: {"session_id":"<uuid>","agent_name":"Nama Agent","version_number":1,"model_name":"gpt-4o"}
+
+event: token
+data: {"token":"Halo"}
+
+event: token
+data: {"token":" dunia"}
+
+event: done
+data: {"session_id":"<uuid>","agent_name":"Nama Agent","version_number":1,"model_name":"gpt-4o","tokens_used":145,"prompt_tokens":80,"completion_tokens":65,"total_tokens":320,"total_prompt_tokens":180,"total_completion_tokens":140}
+```
+
+Catatan: endpoint HTTP biasa `/api/chat` tetap tersedia. Token usage akan terisi jika provider mendukung (baik di HTTP maupun streaming). `tokens_used` adalah total token untuk jawaban ini saja, sedangkan `total_tokens` adalah total kumulatif dari seluruh session (semua pesan assistant di session_id yang sama).
 
 ---
 

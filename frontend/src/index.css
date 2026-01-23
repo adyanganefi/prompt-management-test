@@ -125,7 +125,81 @@ body {
 }
 
 .chat-message-assistant {
-  @apply bg-dark-100 text-dark-900 rounded-2xl rounded-bl-md;
+  @apply bg-primary-50 text-dark-900 border border-primary-100 rounded-2xl rounded-bl-md;
+}
+
+.chat-markdown {
+  @apply text-sm leading-relaxed;
+}
+
+.chat-markdown > :first-child {
+  margin-top: 0;
+}
+
+.chat-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.chat-markdown p {
+  @apply mb-2;
+}
+
+.chat-markdown h1 {
+  @apply text-lg font-semibold mt-3 mb-2;
+}
+
+.chat-markdown h2 {
+  @apply text-base font-semibold mt-3 mb-2;
+}
+
+.chat-markdown h3 {
+  @apply text-sm font-semibold mt-3 mb-2;
+}
+
+.chat-markdown ul {
+  @apply list-disc pl-5 mb-2;
+}
+
+.chat-markdown ol {
+  @apply list-decimal pl-5 mb-2;
+}
+
+.chat-markdown pre {
+  @apply rounded-lg p-3 overflow-x-auto text-xs sm:text-sm;
+}
+
+.chat-message-assistant .chat-markdown pre {
+  @apply bg-dark-900 text-dark-50;
+}
+
+.chat-message-user .chat-markdown pre {
+  @apply bg-dark-900 text-dark-50;
+}
+
+.chat-markdown pre,
+.chat-markdown pre code {
+  color: #e2e8f0;
+}
+
+.chat-markdown code {
+  @apply font-mono text-[0.85em];
+}
+
+.chat-message-assistant .chat-markdown code {
+  @apply text-dark-900;
+}
+
+.chat-message-user .chat-markdown code {
+  @apply text-white;
+}
+
+.chat-markdown pre code {
+  @apply bg-transparent p-0 text-inherit;
+}
+
+.chat-message-assistant .chat-markdown pre code,
+.chat-message-user .chat-markdown pre code {
+  @apply text-dark-50;
 }
 
 /* Loading spinner */

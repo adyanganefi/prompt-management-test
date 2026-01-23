@@ -84,8 +84,65 @@ export const chatApi = {
     headers: {
       // Override auth header: chat endpoint wajib pakai Project API Key sebagai bearer
       Authorization: `Bearer ${projectApiKey}`
-    }
+    },
+    // No timeout for chat requests
+    timeout: 0
   }),
+  stream: async (data, projectApiKey, { onStart, onToken, onDone, onError, signal } = {}) => {
+    const response = await fetch(`${API_BASE_URL}/chat/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${projectApiKey}`
+      },
+      body: JSON.stringify(data),
+      signal
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Streaming request failed');
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('Streaming not supported');
+
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+
+    const handleEvent = (block) => {
+      const lines = block.split('\n').filter(Boolean);
+      let eventName = 'message';
+      let data = '';
+      for (const line of lines) {
+        if (line.startsWith('event:')) {
+          eventName = line.replace('event:', '').trim();
+        } else if (line.startsWith('data:')) {
+          data += line.replace('data:', '').trim();
+        }
+      }
+      if (!data) return;
+      let payload = null;
+      try {
+        payload = JSON.parse(data);
+      } catch (e) {
+        payload = { raw: data };
+      }
+      if (eventName === 'start') onStart?.(payload);
+      if (eventName === 'token') onToken?.(payload);
+      if (eventName === 'done') onDone?.(payload);
+      if (eventName === 'error') onError?.(payload);
+    };
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop() || '';
+      parts.forEach(handleEvent);
+    }
+  },
   getHistory: (sessionId) => api.get(`/chat/history/${sessionId}`),
   listHistory: (params) => api.get('/chat/history', { params }),
   getSessions: (agentId) => api.get(`/chat/sessions${agentId ? `?agent_id=${agentId}` : ''}`),
